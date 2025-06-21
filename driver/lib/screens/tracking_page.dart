@@ -1,25 +1,25 @@
-// lib/screens/tracking_page.dart
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart'; // Added .dart extension
+import 'package:geolocator/geolocator.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'dart:async';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../screens/profile_screen.dart';
-import 'package:provider/provider.dart'; // Import Provider
-import '../providers/map_style_provider.dart'; // Import MapStyleProvider
+import 'package:provider/provider.dart';
+import '../providers/map_style_provider.dart';
+import 'package:geocoding/geocoding.dart'; // NEW: Import geocoding package
 
 class TrackingPage extends StatefulWidget {
   final String token;
   final int driverId;
   final String driverName;
-  final VoidCallback onLogout; // Add onLogout callback
+  final VoidCallback onLogout;
 
   const TrackingPage({
     required this.token,
     required this.driverId,
     required this.driverName,
-    required this.onLogout, // Required onLogout
+    required this.onLogout,
     super.key,
   });
 
@@ -33,13 +33,15 @@ class _TrackingPageState extends State<TrackingPage> {
   bool isConnected = false;
   Position? currentPosition;
   String connectionStatus = "Connecting...";
+  String currentAddress =
+      "Fetching address..."; // NEW: State variable for address
   Timer? reconnectTimer;
 
   final MapController _mapController = MapController();
   final List<Marker> _markers = [];
   static const LatLng _initialCameraPosition = LatLng(39.7392, -104.9903);
 
-  int _selectedIndex = 0; // For BottomNavigationBar
+  int _selectedIndex = 0;
 
   final String serverUrl = 'http://192.168.235.177:4000';
 
@@ -93,9 +95,7 @@ class _TrackingPageState extends State<TrackingPage> {
       socket = IO.io(serverUrl, <String, dynamic>{
         'transports': ['websocket'],
         'autoConnect': false,
-        'extraHeaders': {
-          'token': widget.token
-        },
+        'extraHeaders': {'token': widget.token},
       });
 
       socket!.connect();
@@ -134,30 +134,50 @@ class _TrackingPageState extends State<TrackingPage> {
     positionSub = Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
         accuracy: LocationAccuracy.bestForNavigation,
-        distanceFilter: 5, // Update every 5 meters moved
-        // The 'timeInterval' parameter is no longer available in recent geolocator versions.
-        // Location updates are primarily controlled by accuracy and distanceFilter.
-        // If time-based updates are strictly needed, consider implementing a custom timer
-        // that checks the last position timestamp and forces an update if time limit is exceeded.
+        distanceFilter: 5,
       ),
-    ).listen((position) {
-      _sendLocationUpdate(position);
-    }, onError: (e) {
-      print("Location stream error: $e");
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Location stream error: ${e.toString()}")),
-        );
-      }
-    });
+    ).listen(
+      (position) {
+        _sendLocationUpdate(position);
+      },
+      onError: (e) {
+        print("Location stream error: $e");
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Location stream error: ${e.toString()}")),
+          );
+        }
+      },
+    );
   }
 
-  void _sendLocationUpdate(Position position) {
+  Future<void> _sendLocationUpdate(Position position) async {
     if (!isConnected || socket == null || !socket!.connected) return;
 
     setState(() {
       currentPosition = position;
-      _updateMarker(position); // Update map marker when position changes
+    });
+
+    // NEW: Perform reverse geocoding
+    String address = "Fetching address...";
+    try {
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+      if (placemarks.isNotEmpty) {
+        Placemark place = placemarks[0];
+        address =
+            '${place.street}, ${place.subLocality}, ${place.locality}, ${place.administrativeArea}, ${place.country}';
+      }
+    } catch (e) {
+      print("Geocoding error: $e");
+      address = "Address not found";
+    }
+
+    setState(() {
+      currentAddress = address; // Update the address state
+      _updateMarker(position, address); // Pass address to updateMarker
     });
 
     try {
@@ -173,7 +193,8 @@ class _TrackingPageState extends State<TrackingPage> {
     }
   }
 
-  void _updateMarker(Position position) {
+  void _updateMarker(Position position, String address) {
+    // Updated to accept address
     _markers.clear();
     final LatLng latLng = LatLng(position.latitude, position.longitude);
 
@@ -202,10 +223,6 @@ class _TrackingPageState extends State<TrackingPage> {
       ),
     );
 
-    // Animate map camera to the new position
-    // Use `move` for instant jump or `fitCamera` for animation with `flutter_map`.
-    // The `animateTo` method and `zoom` getter are not directly available on MapController.
-    // If you need a smooth animation, consider a custom implementation or specific flutter_map plugins.
     _mapController.move(latLng, _mapController.camera.zoom);
   }
 
@@ -226,7 +243,6 @@ class _TrackingPageState extends State<TrackingPage> {
     });
   }
 
-  // Bottom Navigation Bar handler
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -244,46 +260,45 @@ class _TrackingPageState extends State<TrackingPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Consume MapStyleProvider to get the current map style URL
     final mapStyleProvider = Provider.of<MapStyleProvider>(context);
 
-    List<Widget> widgetOptions = <Widget>[
+    List<Widget> _widgetOptions = <Widget>[
       // Map View
       Column(
         children: [
           ListTile(
             title: const Text("Location Status"),
             subtitle: Text(connectionStatus),
-            trailing: !isConnected
-                ? IconButton(
-                    icon: const Icon(Icons.refresh),
-                    onPressed: _connectSocketIO,
-                  )
-                : null,
+            trailing:
+                !isConnected
+                    ? IconButton(
+                      icon: const Icon(Icons.refresh),
+                      onPressed: _connectSocketIO,
+                    )
+                    : null,
           ),
-          if (currentPosition != null) ...[
-            ListTile(
-              title: const Text("Latitude"),
-              subtitle: Text(currentPosition!.latitude.toStringAsFixed(6)),
-            ),
-            ListTile(
-              title: const Text("Longitude"),
-              subtitle: Text(currentPosition!.longitude.toStringAsFixed(6)),
-            ),
-          ],
+          // NEW: Display the formatted address instead of Lat/Lng
+          ListTile(
+            title: const Text("Current Location"),
+            subtitle: Text(currentAddress),
+          ),
           Expanded(
             child: FlutterMap(
               mapController: _mapController,
               options: MapOptions(
-                initialCenter: currentPosition != null
-                    ? LatLng(currentPosition!.latitude, currentPosition!.longitude)
-                    : _initialCameraPosition,
+                initialCenter:
+                    currentPosition != null
+                        ? LatLng(
+                          currentPosition!.latitude,
+                          currentPosition!.longitude,
+                        )
+                        : _initialCameraPosition,
                 initialZoom: 15.0,
-                keepAlive: true, // Keep the map state alive when tab changes
+                keepAlive: true,
               ),
               children: [
                 TileLayer(
-                  urlTemplate: mapStyleProvider.currentMapStyle.url, // Use selected map style
+                  urlTemplate: mapStyleProvider.currentMapStyle.url,
                   userAgentPackageName: 'com.example.flutter_driver_app',
                 ),
                 MarkerLayer(markers: _markers),
@@ -296,7 +311,7 @@ class _TrackingPageState extends State<TrackingPage> {
       ProfileScreen(
         driverName: widget.driverName,
         driverId: widget.driverId.toString(),
-        onLogout: widget.onLogout, // Pass logout callback to ProfileScreen
+        onLogout: widget.onLogout,
       ),
     ];
 
@@ -310,23 +325,15 @@ class _TrackingPageState extends State<TrackingPage> {
           ),
         ],
       ),
-      body: Center(
-        child: widgetOptions.elementAt(_selectedIndex),
-      ),
+      body: Center(child: _widgetOptions.elementAt(_selectedIndex)),
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.map),
-            label: 'Map',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.map), label: 'Map'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: Theme.of(context).primaryColor,
-        unselectedItemColor: Theme.of(context).textTheme.bodySmall?.color, // Ensure unselected icons are visible in dark mode
+        unselectedItemColor: Theme.of(context).textTheme.bodySmall?.color,
         onTap: _onItemTapped,
       ),
     );

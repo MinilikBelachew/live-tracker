@@ -42,6 +42,7 @@ dependencies:
   flutter_map:         # For displaying OpenStreetMap (replaces google_maps_flutter)
   latlong2:           # For LatLng operations, used with flutter_map
   shared_preferences:
+  geocoding:
 
 
 dev_dependencies:
