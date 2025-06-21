@@ -5,23 +5,25 @@ import 'package:shared_preferences/shared_preferences.dart';
 enum MapStyle {
   osmStandard(
     name: 'Standard OSM',
-    url: '[https://tile.openstreetmap.org/](https://tile.openstreetmap.org/){z}/{x}/{y}.png',
+    url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
   ),
   osmHot(
     name: 'Humanitarian OSM',
-    url: '[https://tileserver.memomaps.de/tilegen/](https://tileserver.memomaps.de/tilegen/){z}/{x}/{y}.png', // OSM Humanitarian
+    url:
+        'https://tileserver.memomaps.de/tilegen/{z}/{x}/{y}.png', // OSM Humanitarian
   ),
   osmCyclo(
     name: 'OpenCycleMap',
-    url: '[https://tile.thunderforest.com/cycle/](https://tile.thunderforest.com/cycle/){z}/{x}/{y}.png?apikey=[dd553dcab2134a34b5095b7612231152]', // Thunderforest Cycle - Requires API Key
+    url:
+        'https://tile.thunderforest.com/cycle/{z}/{x}/{y}.png?apikey=dd553dcab2134a34b5095b7612231152', // Thunderforest Cycle - Requires API Key
   ),
   stamenToner(
     name: 'Stamen Toner',
-    url: '[https://stamen-tiles.a.ssl.fastly.net/toner/](https://stamen-tiles.a.ssl.fastly.net/toner/){z}/{x}/{y}.png',
+    url: 'https://stamen-tiles.a.ssl.fastly.net/toner/{z}/{x}/{y}.png',
   ),
   stamenTerrain(
     name: 'Stamen Terrain',
-    url: '[https://stamen-tiles.a.ssl.fastly.net/terrain/](https://stamen-tiles.a.ssl.fastly.net/terrain/){z}/{x}/{y}.png',
+    url: 'https://stamen-tiles.a.ssl.fastly.net/terrain/{z}/{x}/{y}.png',
   );
 
   const MapStyle({required this.name, required this.url});

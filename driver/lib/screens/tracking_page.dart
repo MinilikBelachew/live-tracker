@@ -247,7 +247,7 @@ class _TrackingPageState extends State<TrackingPage> {
     // Consume MapStyleProvider to get the current map style URL
     final mapStyleProvider = Provider.of<MapStyleProvider>(context);
 
-    List<Widget> _widgetOptions = <Widget>[
+    List<Widget> widgetOptions = <Widget>[
       // Map View
       Column(
         children: [
@@ -311,7 +311,7 @@ class _TrackingPageState extends State<TrackingPage> {
         ],
       ),
       body: Center(
-        child: _widgetOptions.elementAt(_selectedIndex),
+        child: widgetOptions.elementAt(_selectedIndex),
       ),
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[

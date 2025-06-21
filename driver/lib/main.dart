@@ -75,14 +75,14 @@ class _MyAppState extends State<MyApp> {
           iconColor: Colors.blue[800],
         ),
         switchTheme: SwitchThemeData(
-          thumbColor: MaterialStateProperty.resolveWith((states) {
-            if (states.contains(MaterialState.selected)) {
+          thumbColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
               return Colors.blue;
             }
             return Colors.grey;
           }),
-          trackColor: MaterialStateProperty.resolveWith((states) {
-            if (states.contains(MaterialState.selected)) {
+          trackColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
               return Colors.blue.withOpacity(0.5);
             }
             return Colors.grey.withOpacity(0.5);
@@ -106,14 +106,14 @@ class _MyAppState extends State<MyApp> {
           iconColor: Colors.indigo[300],
         ),
         switchTheme: SwitchThemeData(
-          thumbColor: MaterialStateProperty.resolveWith((states) {
-            if (states.contains(MaterialState.selected)) {
+          thumbColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
               return Colors.indigo;
             }
             return Colors.grey[600];
           }),
-          trackColor: MaterialStateProperty.resolveWith((states) {
-            if (states.contains(MaterialState.selected)) {
+          trackColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
               return Colors.indigo.withOpacity(0.5);
             }
             return Colors.grey.withOpacity(0.5);
