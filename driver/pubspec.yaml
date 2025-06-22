@@ -43,6 +43,10 @@ dependencies:
   latlong2:           # For LatLng operations, used with flutter_map
   shared_preferences:
   geocoding:
+  flutter_background_service: 
+  background_fetch: 
+  permission_handler: 
+  flutter_local_notifications: 
 
 
 dev_dependencies:
